@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: dev
+  name: jobs-nucleus-dev
+  labels:
+    app: jobs-nucleus-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobs-nucleus-dev
+  template:
+    metadata:
+      labels:
+        app: jobs-nucleus-dev
+    spec:
+      containers:
+        - name: jobs-nucleus-dev
+          image: 046874047165.dkr.ecr.ap-south-1.amazonaws.com/jobs_nucleus:development
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8009
+          
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: dev
+  name: jobs-nucleus-dev
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /nucleus/sensordevices
+spec:
+  selector:
+    app: jobs-nucleus-dev
+  ports:
+    - protocol: TCP
+      port: 8009
+      targetPort: 8009
+      # nodePort: 30009
+  # type: NodePort

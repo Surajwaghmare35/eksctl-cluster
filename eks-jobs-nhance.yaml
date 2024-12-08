@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: dev
+  name: jobs-nhance-dev
+  labels:
+    app: jobs-nhance-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobs-nhance-dev
+  template:
+    metadata:
+      labels:
+        app: jobs-nhance-dev
+    spec:
+      containers:
+        - name: jobs-nhance-dev
+          image: 046874047165.dkr.ecr.ap-south-1.amazonaws.com/jobs_nhance:development
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 8002
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: dev
+  name: jobs-nhance-dev
+spec:
+  selector:
+    app: jobs-nhance-dev
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8002
+      # nodePort: 30001
+  # type: NodePort
