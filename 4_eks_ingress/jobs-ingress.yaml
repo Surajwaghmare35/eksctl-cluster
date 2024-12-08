@@ -1,0 +1,130 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: dev
+  name: ingress
+  annotations:
+    alb.ingress.kubernetes.io/group.name: nhance-dev-group
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=dev
+    # alb.ingress.kubernetes.io/ip-address-type: dualstack
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    # external-dns specific configuration for creating route53 record-set
+    # external-dns.alpha.kubernetes.io/hostname: eks-dev-jobs.letsnhance.com # give your domain name here
+    alb.ingress.kubernetes.io/use-regex: "true"
+    alb.ingress.kubernetes.io/rewrite-target: /path/${2} # Variables that match the regular expressions are concatenated to form the path that overwrites the original path.
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:046874047165:certificate/d0614eac-a51a-4721-a305-7b61502857f5
+
+spec:
+  ingressClassName: alb
+  # tls:
+  # - hosts:
+  #   - *.letsnhance.com
+  rules:
+  # - host: eks-dev-jobs.letsnhance.com
+  - host: dev-jobs.letsnhance.com
+    http:
+      paths:
+      -  pathType: Prefix
+         path: /
+         backend:
+          service:
+            name: jobs-adrianse-dev
+            port:
+              number: 8001
+      - pathType: Prefix
+        path: /nhance
+        backend:
+          service:
+            name: jobs-nhance-dev
+            port:
+              number: 8002
+      - pathType: Prefix
+        path: /fidelity
+        backend:
+          service:
+            name: jobs-fidelity-dev
+            port:
+                  number: 8003
+      # - pathType: Prefix
+      #   path: /tatadigital
+      #   backend:
+      #     service:
+      #       name: jobs-tatadigital-dev
+      #       port:
+      #         number: 8004
+      # - pathType: Prefix
+      #   path: /cultfit
+      #   backend:
+      #     service:
+      #       name: jobs-cultfit-dev
+      #       port:
+      #         number: 8080
+      - pathType: Prefix
+        path: /bosch
+        backend:
+          service:
+            name: jobs-bosch-dev
+            port:
+              number: 8006
+      - pathType: Prefix
+        path: /ubl
+        backend:
+          service:
+            name: jobs-ubl-dev
+            port:
+              number: 8007
+      - pathType: Prefix
+        path: /buerofreunde
+        backend:
+          service:
+            name: jobs-buerofreunde-dev
+            port:
+              number: 8008
+      - pathType: Prefix
+        path: /nucleus
+        backend:
+          service:
+            name: jobs-nucleus-dev
+            port:
+              number: 8009
+      - pathType: Prefix
+        path: /rmz
+        backend:
+          service:
+            name: jobs-rmz-dev
+            port:
+              number: 8010
+      - pathType: Prefix
+        path: /ccl
+        backend:
+          service:
+            name: jobs-ccl-dev
+            port:
+              number: 8011
+      - pathType: Prefix
+        path: /loop360
+        backend:
+          service:
+            name: jobs-loop360-dev
+            port:
+              number: 8012
+      - pathType: Prefix
+        path: /opentext
+        backend:
+          service:
+            name: jobs-opentext-dev
+            port:
+              number: 8013
+      - pathType: Prefix
+        path: /apar
+        backend:
+          service:
+            name: jobs-apar-dev
+            port:
+              number: 8015

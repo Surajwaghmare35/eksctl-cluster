@@ -1,0 +1,16 @@
+# refLink : https://github.com/kubernetes-sigs/kustomize/blob/master/examples/helloWorld/kustomization.yaml
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: arbitrary
+
+# Example configuration for the webserver at https://github.com/monopole/hello
+# commonLabels:
+#   app: hello
+
+resources:
+# - ./1-eks-namespace.yaml
+- ./3_jobs_deploy_svc_hpa/
+- ./4_eks_ingress/
+- ./argoCD/

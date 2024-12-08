@@ -1,0 +1,72 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: prometheus
+  name: ingress
+  annotations:
+    alb.ingress.kubernetes.io/group.name: nhance-dev-group
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=dev
+    # alb.ingress.kubernetes.io/ip-address-type: dualstack
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    # external-dns specific configuration for creating route53 record-set
+    # external-dns.alpha.kubernetes.io/hostname: eks-dev-grafana.letsnhance.com # give your domain name here
+    alb.ingress.kubernetes.io/use-regex: "true"
+    alb.ingress.kubernetes.io/rewrite-target: /path/${2} # Variables that match the regular expressions are concatenated to form the path that overwrites the original path.
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:046874047165:certificate/d0614eac-a51a-4721-a305-7b61502857f5
+
+spec:
+  ingressClassName: alb
+  rules:
+  - host: eks-dev-prometheus.letsnhance.com
+    http:
+      paths:
+      -  pathType: Prefix
+         path: /
+        #  path: /graph
+        # kubectl annotate svc -n prometheus prometheus-server alb.ingress.kubernetes.io/healthcheck-path="/graph" or /query
+         backend:
+          service:
+            name: prometheus-server
+            # name: prometheus-service
+            port:
+              number: 80
+              # number: 30900
+  - host: eks-dev-promalert.letsnhance.com
+    http:
+      paths:
+      -  pathType: Prefix
+         path: /
+         backend:
+          service:
+            name: prometheus-alertmanager
+            port:
+              number: 9093
+              # number: 30900
+  - host: eks-dev-promgateway.letsnhance.com
+    http:
+      paths:
+      -  pathType: Prefix
+         path: /
+         backend:
+          service:
+            name: prometheus-prometheus-pushgateway 
+            port:
+              number: 9091
+  - host: eks-dev-grafana.letsnhance.com
+    http:
+      paths:
+      -  pathType: Prefix
+         path: /
+        #  path: /login
+        # kubectl annotate svc -n prometheus grafana alb.ingress.kubernetes.io/healthcheck-path="/login"
+         backend:
+          service:
+            name: grafana
+            port:
+              number: 80

@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: nhance-dev
+  namespace: argocd
+  # Finalizer that ensures that project is not deleted until it is not referenced by any application
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # Project description
+  description: Digital-Twin Nhance-Dev Project
+
+  # Allow manifests to deploy from any Git repos
+  sourceRepos:
+  - '*'
+  
+  # Only permit applications to deploy to the guestbook namespace in the same cluster
+  # Destination clusters can be identified by 'server', 'name', or both.
+  destinations:
+  # - namespace: dev
+  #   server: https://kubernetes.default.svc
+  #   name: in-cluster
+  - namespace: '*'
+    server: '*'
+    name: ''
+
+  # Deny all cluster-scoped resources from being created, except for Namespace
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+
+  # Enables namespace orphaned resource monitoring.
+  orphanedResources:
+    warn: false
+
+  # # Sync windows restrict when Applications may be synced. https://argo-cd.readthedocs.io/en/stable/user-guide/sync_windows/
+  # syncWindows:
+  # - kind: allow
+  #   schedule: '10 1 * * *'
+  #   duration: 1h
+  #   applications:
+  #     - '*-prod'
+  #   manualSync: true
+  # - kind: deny
+  #   schedule: '0 22 * * *'
+  #   duration: 1h
+  #   namespaces:
+  #     - default
+  # - kind: allow
+  #   schedule: '0 23 * * *'
+  #   duration: 1h
+  #   clusters:
+  #     - in-cluster
+  #     - cluster1
+
+  # By default, apps may sync to any cluster specified under the `destinations` field, even if they are not
+  # scoped to this project. Set the following field to `true` to restrict apps in this cluster to only clusters
+  # scoped to this project.
+  permitOnlyProjectScopedClusters: false

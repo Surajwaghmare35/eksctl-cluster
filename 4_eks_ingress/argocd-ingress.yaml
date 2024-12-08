@@ -1,0 +1,56 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: argocd
+  name: ingress
+  annotations:
+    alb.ingress.kubernetes.io/group.name: nhance-dev-group
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=dev
+    # alb.ingress.kubernetes.io/ip-address-type: dualstack
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
+    # Use this annotation (which must match a service name) to route traffic to HTTP2 backends.
+    alb.ingress.kubernetes.io/conditions.argogrpc: |
+      [{"field":"http-header","httpHeaderConfig":{"httpHeaderName": "Content-Type", "values":["application/grpc"]}}]
+    
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    
+    # external-dns specific configuration for creating route53 record-set
+    external-dns.alpha.kubernetes.io/hostname: eks-dev-argocd.letsnhance.com # give your domain name here
+    external-dns.alpha.kubernetes.io/alias: "true"
+
+    alb.ingress.kubernetes.io/use-regex: "true"
+    alb.ingress.kubernetes.io/rewrite-target: /path/${2} # Variables that match the regular expressions are concatenated to form the path that overwrites the original path.
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:046874047165:certificate/d0614eac-a51a-4721-a305-7b61502857f5
+
+spec:
+  ingressClassName: alb
+  rules:
+  - host: eks-dev-argocd.letsnhance.com
+    http:
+      paths:
+      -  pathType: Prefix
+         path: /
+         backend:
+          service:
+            name: argogrpc
+            port:
+              number: 443
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            # name: argocd-server
+            name: argo-cd-argocd-server
+            port:
+              number: 443
+  # tls:
+  # - hosts:
+  #   - host: eks-dev-argocd.letsnhance.com
+  #   - argocd.argoproj.io

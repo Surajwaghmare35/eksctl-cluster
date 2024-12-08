@@ -1,0 +1,23 @@
+# refLink : https://github.com/kubernetes-sigs/kustomize/blob/master/examples/helloWorld/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: arbitrary
+
+# Example configuration for the webserver at https://github.com/monopole/hello
+# commonLabels:
+#   app: hello
+
+resources:
+- ./1-eks-jobs-adrianse.yaml
+- ./2-eks-jobs-nhance.yaml
+- ./3-eks-jobs-fidelity.yaml
+- ./4-eks-jobs-bosch.yaml
+- ./5-eks-jobs-ubl.yaml
+- ./6-eks-jobs-buerofreunde.yaml
+- ./7-eks-jobs-nucleus.yaml
+- ./8-eks-jobs-rmz.yaml
+- ./9-eks-jobs-ccl.yaml
+- ./10-eks-jobs-loop360.yaml
+- ./11-eks-jobs-opentext.yaml
+- ./12-eks-jobs-apar.yaml

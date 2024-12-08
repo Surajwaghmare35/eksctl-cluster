@@ -1,0 +1,48 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: kubernetes-dashboard
+  name: ingress
+  annotations:
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig":
+      { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+    alb.ingress.kubernetes.io/group.name: nhance-dev-group
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=dev
+    # alb.ingress.kubernetes.io/ip-address-type: dualstack
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTPS
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port    
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    # external-dns specific configuration for creating route53 record-set
+    external-dns.alpha.kubernetes.io/hostname: eks-dev-dash.letsnhance.com # give your domain name here
+    external-dns.alpha.kubernetes.io/alias: "true"
+    alb.ingress.kubernetes.io/use-regex: "true"
+    alb.ingress.kubernetes.io/rewrite-target: /path/${2} # Variables that match the regular expressions are concatenated to form the path that overwrites the original path.
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:046874047165:certificate/d0614eac-a51a-4721-a305-7b61502857f5
+
+spec:
+  ingressClassName: alb
+  rules:
+  - host: eks-dev-dash.letsnhance.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: ssl-redirect
+            port:
+              name: use-annotation
+      -  pathType: Prefix
+         path: /
+         backend:
+          service:
+            # name: kubernetes-dashboard-web
+            name: kubernetes-dashboard-kong-proxy
+            port:
+              # number: 8000
+              number: 443

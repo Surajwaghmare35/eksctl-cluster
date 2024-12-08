@@ -1,0 +1,302 @@
+# eksctl create cluster -f config.yaml
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+# autoModeConfig:
+#   # defaults to false
+#   enabled: true
+#   # optional, defaults to [general-purpose, system].
+#   # To disable creation of nodePools, set it to the empty array ([]).
+#   nodePools: [general-purpose, system]
+#   # optional, eksctl creates a new role if this is not supplied
+#   # and nodePools are present.
+# #  nodeRoleARN: ""
+
+metadata:
+  name: nhance-dev
+  region: ap-south-1
+  version: "1.31"
+  tags:
+    environment: development
+availabilityZones:
+- ap-south-1a
+- ap-south-1b
+- ap-south-1c
+
+# 1) eksctl utils update-authentication-mode -f config.yaml 2> /dev/null 
+accessConfig:
+  authenticationMode: API_AND_CONFIG_MAP
+  
+  # 2) eksctl create accessentry -f config.yaml 
+  # eksctl get accessentry -f config.yaml 
+  accessEntries:
+  # - principalARN: arn:aws:iam::046874047165:user/interactionone
+  - principalARN: arn:aws:iam::046874047165:user/Sharad
+    accessPolicies: # optional access polices
+      - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+        accessScope:
+          type: cluster
+
+# 3) eksctl utils update-cluster-logging --config-file config.yaml --approve           
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["*"]
+    # ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+    logRetentionInDays: 7
+    # https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html#API_PutRetentionPolicy_RequestSyntax
+
+privateCluster:
+  enabled: false
+  skipEndpointCreation: false
+
+iam:
+  vpcResourceControllerPolicy: true
+  # 4) eksctl utils associate-iam-oidc-provider -f config.yaml --approve
+  withOIDC: true
+  
+# 5) eksctl create/update addon -f config.yaml
+addonsConfig:
+  disableDefaultAddons: false
+  autoApplyPodIdentityAssociations: true
+
+# bear in mind that if either pod identity or IRSA configuration is explicitly set in the config file,
+# or if the addon does not support pod identities,
+# addonsConfig.autoApplyPodIdentityAssociations won't have any effect.
+
+addons:
+- name: coredns
+  version: latest
+- name: kube-proxy
+  version: latest
+- name: eks-pod-identity-agent
+  version: latest
+
+# - name: vpc-cni
+#   version: latest
+#   # useDefaultPodIdentityAssociations: true
+#   tags:
+#     team: eks
+#   podIdentityAssociations:
+#   - serviceAccountName: aws-node
+#     namespace : kube-system
+#     permissionPolicyARNs: ["arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"]
+
+- name: vpc-cni
+  # all below properties are optional
+  version: latest
+  tags:
+    team: eks
+  # you can specify at most one of:
+  attachPolicyARNs:
+  # - arn:aws:iam::account:policy/AmazonEKS_CNI_Policy
+  - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+  # or
+  # serviceAccountRoleARN: arn:aws:iam::account:role/AmazonEKSCNIAccess
+  resolveConflicts: overwrite
+  
+  # or
+  # attachPolicy:
+  #   Statement:
+  #   - Effect: Allow
+  #     Action:
+  #     - ec2:AssignPrivateIpAddresses
+  #     - ec2:AttachNetworkInterface
+  #     - ec2:CreateNetworkInterface
+  #     - ec2:DeleteNetworkInterface
+  #     - ec2:DescribeInstances
+  #     - ec2:DescribeTags
+  #     - ec2:DescribeNetworkInterfaces
+  #     - ec2:DescribeInstanceTypes
+  #     - ec2:DetachNetworkInterface
+  #     - ec2:ModifyNetworkInterfaceAttribute
+  #     - ec2:UnassignPrivateIpAddresses
+  #     Resource: '*'
+
+#-----FARGATE-------#
+
+# eksctl create fargateprofile -f config.yaml        
+fargateProfiles:
+  - name: fp-default
+    selectors:
+      # All workloads in the "default" Kubernetes namespace will be
+      # scheduled onto Fargate:
+      - namespace: default
+      # All workloads in the "kube-system" Kubernetes namespace will be
+      # scheduled onto Fargate:
+      - namespace: kube-system
+    status: ""
+  - name: fp-dev
+    selectors:
+      # All workloads in the "dev" Kubernetes namespace matching the following
+      # label selectors will be scheduled onto Fargate:
+      - namespace: dev
+      - namespace: cert-manager
+      # - namespace: metrics-server
+      # - namespace: prometheus
+      # - namespace: grafana
+        # labels:
+        #   env: dev
+        #   checks: passed
+
+# #-----SELF-MANAGED-NODE-GROUP-------#
+
+# # eksctl create nodegroup --name=self-managed-nhance-dev --cluster=nhance-dev --managed=false --region ap-south-1 --dry-run 
+# # eksctl create nodegroup -f config.yaml
+# # eksctl delete nodegroup -f config.yaml --approve
+# nodeGroups:
+#   - name: self-managed-nhance-dev
+#     # instanceType: t3.medium
+#     # instanceTypes` defaults to [`m5.large`]
+#     amiFamily: AmazonLinux2
+#     containerRuntime: containerd
+#     minSize: 1
+#     maxSize: 1
+#     desiredCapacity: 1
+#     disableIMDSv1: true
+#     disablePodIMDS: false
+#     # volumeIOPS: 3000
+#     volumeSize: 80
+#     # volumeThroughput: 125
+#     volumeType: gp2
+#     # volumeType: gp3
+#     privateNetworking: false
+#     iam:
+#       withAddonPolicies:
+#         autoScaler: true
+#         ebs: true
+  
+#     # instanceSelector:
+#     #   vCPUs: 2
+#     #   memory: 2/4GiB #
+#     #   cpuArchitecture: x86_64 # default value
+#     #   instanceTypes:
+#     #   - t3.medium
+  
+#     # spot: true
+  
+#     # Nodegroup Health
+#   # eksctl utils nodegroup-health --name=self-managed-nhance-dev --cluster=nhance-dev
+        
+#     ssh:
+#       allow: true
+#       # enableSsm: false
+#       # publicKeyPath: ""
+#       publicKeyName: "twin_bastion"
+#       # new feature for restricting SSH access to certain AWS security group IDs
+#       # sourceSecurityGroupIds: ["sg-00241fbb12c607007"]
+#     securityGroups:
+#       withLocal: true #true in self-managed nodegroup
+#       withShared: true #true in self-managed nodegroup
+#     labels:
+#       alpha.eksctl.io/cluster-name: nhance-dev
+#       alpha.eksctl.io/nodegroup-name: self-managed-nhance-dev
+#     tags:
+#       alpha.eksctl.io/nodegroup-name: self-managed-nhance-dev
+#       alpha.eksctl.io/nodegroup-type: managed
+    
+#     # aws eks update-nodegroup-config --cluster-name nhance-dev --nodegroup-name self-managed-nhance-dev --node-repair-config enabled=true
+#     # update using console
+#     # nodeRepairConfig:
+#     #   enabled: true
+
+# #-----MANAGED-NODE-GROUP-------#
+
+# eksctl create nodegroup --name=managed-nhance-dev --cluster=nhance-dev --managed --region ap-south-1 --dry-run 
+# eksctl create nodegroup -f config.yaml
+# eksctl delete nodegroup -f config.yaml --approve
+managedNodeGroups:
+  - name: managed-nhance-dev
+    # instanceType: t3.medium
+    # instanceTypes` defaults to [`m5.large`]
+    amiFamily: AmazonLinux2
+    minSize: 1
+    maxSize: 1
+    desiredCapacity: 1
+    disableIMDSv1: true
+    disablePodIMDS: false
+    # volumeIOPS: 3000
+    volumeSize: 80
+    # volumeThroughput: 125
+    volumeType: gp2
+    # volumeType: gp3
+    privateNetworking: false
+    iam:
+  # https://docs.aws.amazon.com/eks/latest/userguide/cni-iam-role.html
+      withAddonPolicies:
+        autoScaler: true
+        ebs: true
+        albIngress: false
+        imageBuilder: true
+        externalDNS: true
+        certManager: true
+        appMesh: true
+        appMeshPreview: true
+        fsx: true
+        efs: true
+        awsLoadBalancerController: true
+        xRay: true
+        cloudWatch: true
+
+    # additionalVolumes:
+    #   - volumeName: '/tmp/mount-2'  # required
+    #     volumeSize: 80
+    #     volumeType: 'gp2'
+    #     snapshotID: 'snapshot-id'
+  
+    # instanceSelector:
+    #   vCPUs: 2
+    #   memory: 2/4GiB #
+    #   cpuArchitecture: x86_64 # default value
+    #   instanceTypes:
+    #   - t3.medium
+  
+    # spot: true
+  
+    # Nodegroup Health
+  # eksctl utils nodegroup-health --name=managed-nhance-dev --cluster=nhance-dev
+    
+    releaseVersion: ""
+    
+    ssh:
+      allow: true
+      # enableSsm: false
+      # publicKeyPath: ""
+      publicKeyName: "twin_bastion"
+      # new feature for restricting SSH access to certain AWS security group IDs
+      # sourceSecurityGroupIds: ["sg-00241fbb12c607007"]
+    securityGroups:
+      withLocal: null #true in self-managed nodegroup
+      withShared: null #true in self-managed nodegroup
+    labels:
+      alpha.eksctl.io/cluster-name: nhance-dev
+      alpha.eksctl.io/nodegroup-name: managed-nhance-dev
+    tags:
+      alpha.eksctl.io/nodegroup-name: managed-nhance-dev
+      alpha.eksctl.io/nodegroup-type: managed
+    
+    # aws eks update-nodegroup-config --cluster-name nhance-dev --nodegroup-name managed-nhance-dev --node-repair-config enabled=true
+    # update using console
+    # nodeRepairConfig:
+    #   enabled: true
+
+# highly-available-cluster
+zonalShiftConfig:
+  enabled: false
+
+kubernetesNetworkConfig:
+  ipFamily: IPv4
+vpc:
+  autoAllocateIPv6: false
+  cidr: 10.20.0.0/16
+  # cidr: 192.168.0.0/16
+  # eksctl utils update-cluster-vpc-config -f config.yaml --approve
+  clusterEndpoints:
+    privateAccess: false
+    publicAccess: true
+  # publicAccessCIDRs: ["1.1.1.1/32"]
+  manageSharedNodeSecurityGroupRules: true
+  nat:
+    gateway: Single # other options: HighlyAvailable, Disable, Single (default)
+
+# eksctl delete cluster -f config.yaml --wait

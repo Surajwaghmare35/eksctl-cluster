@@ -1,0 +1,19 @@
+# refLink : https://github.com/argoproj-labs/argocd-image-updater/issues/112
+# refLink : https://argocd-image-updater.readthedocs.io/en/stable/configuration/registries/#configuration-format
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-image-updater-config
+  namespace: argocd
+data:
+  registries.conf: |
+    registries:
+    - name: ECR
+      prefix: 046874047165.dkr.ecr.ap-south-1.amazonaws.com
+      api_url: https://046874047165.dkr.ecr.ap-south-1.amazonaws.com
+      # credentials: secret:argocd-image-updater-secret#creds
+      credentials: pullsecret:argocd/argocd-image-updater-secret
+      credentials: ext:/scripts/ecr-login.sh 
+      defaultns: library
+      default: true

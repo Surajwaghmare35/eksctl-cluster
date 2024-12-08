@@ -1,0 +1,34 @@
+# fargate
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager 
+
+# genaral
+
+# ---
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: metrics-server
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prometheus
+# ---
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: grafana
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd

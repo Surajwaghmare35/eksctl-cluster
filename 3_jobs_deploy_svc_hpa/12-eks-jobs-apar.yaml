@@ -1,0 +1,70 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: dev
+  name: jobs-apar-dev
+  labels:
+    app: jobs-apar-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobs-apar-dev
+  template:
+    metadata:
+      labels:
+        app: jobs-apar-dev
+    spec:
+      containers:
+        - name: jobs-apar-dev
+          image: 046874047165.dkr.ecr.ap-south-1.amazonaws.com/jobs_apar:development
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8015
+          
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: dev
+  name: jobs-apar-dev
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /apar/sensordevices
+spec:
+  selector:
+    app: jobs-apar-dev
+  ports:
+    - protocol: TCP
+      port: 8015
+      targetPort: 8015
+      # nodePort: 30015
+  # type: NodePort
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  namespace: dev
+  name: jobs-apar-dev
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: jobs-apar-dev
+  minReplicas: 1
+  maxReplicas: 2
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50

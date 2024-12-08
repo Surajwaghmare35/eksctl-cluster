@@ -1,0 +1,70 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: dev
+  name: jobs-loop360-dev
+  labels:
+    app: jobs-loop360-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobs-loop360-dev
+  template:
+    metadata:
+      labels:
+        app: jobs-loop360-dev
+    spec:
+      containers:
+        - name: jobs-loop360-dev
+          image: 046874047165.dkr.ecr.ap-south-1.amazonaws.com/jobs_loop360:development
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8012
+          
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: dev
+  name: jobs-loop360-dev
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /loop360/devicestatus
+spec:
+  selector:
+    app: jobs-loop360-dev
+  ports:
+    - protocol: TCP
+      port: 8012
+      targetPort: 8012
+      # nodePort: 30012
+  # type: NodePort
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  namespace: dev
+  name: jobs-loop360-dev
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: jobs-loop360-dev
+  minReplicas: 1
+  maxReplicas: 2
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50

@@ -1,0 +1,45 @@
+# refLink : https://github.com/antonputra/tutorials/blob/main/lessons/200/terraform/values/image-updater.yaml
+# refLink : https://medium.com/@tomas94depi/argo-image-updater-with-aws-ecr-ddb661abb332
+
+extraEnv:
+  - name: AWS_REGION
+    value: "ap-south-1"
+
+config:
+  registries:
+    - name: ECR
+      prefix: 046874047165.dkr.ecr.ap-south-1.amazonaws.com
+      api_url: https://046874047165.dkr.ecr.ap-south-1.amazonaws.com
+      ping: yes
+      insecure: no
+      # credentials: secret:argocd-image-updater-secret#creds
+      # credentials: pullsecret:argocd/argocd-image-updater-secret
+      credentials: ext:/scripts/ecr-login.sh 
+      credsexpire: 10h
+      # defaultns: library
+      # default: true
+ 
+# whether to mount authentication scripts, if enabled, the authentication scripts will be mounted on /scripts that can be used to authenticate with registries (ECR)
+# refer to https://argocd-image-updater.readthedocs.io/en/stable/configuration/registries/#specifying-credentials-for-accessing-container-registries for more info
+authScripts:
+  # -- Whether to mount the defined scripts that can be used to authenticate with a registry, the scripts will be mounted at `/scripts`
+  enabled: true
+  # enabled: false
+  # -- Map of key-value pairs where the key consists of the name of the script and the value the contents
+  scripts:
+    ecr-login.sh: |
+      #!/bin/sh
+      aws ecr --region "ap-south-1" get-authorization-token --output text --query 'authorizationData[].authorizationToken' | base64 -d
+
+# -- Security context settings for the deployment
+# @default -- See [values.yaml]
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+  # readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault

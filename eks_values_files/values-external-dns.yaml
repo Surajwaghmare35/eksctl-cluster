@@ -1,0 +1,9 @@
+provider:
+  name: aws
+env:
+  - name: AWS_DEFAULT_REGION
+    value: ap-south-1 # change to region where EKS is installed
+serviceAccount:
+  annotations:
+    # eks.amazonaws.com/role-arn: arn:aws:iam::${ACCOUNT_ID}:role/${EXTERNALDNS_ROLE_NAME:-"external-dns"}
+    eks.amazonaws.com/role-arn: arn:aws:iam::046874047165:role/eksctl-nhance-dev-addon-iamserviceaccount-kub-Role1-0wc3doe5hX38

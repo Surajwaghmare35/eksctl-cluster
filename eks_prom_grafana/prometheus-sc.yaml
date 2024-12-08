@@ -1,0 +1,27 @@
+# Ref: https://aws.amazon.com/blogs/containers/monitoring-amazon-eks-on-aws-fargate-using-prometheus-and-grafana/
+# Ref: https://github.com/kubernetes-sigs/aws-ebs-csi-driver/blob/master/examples/kubernetes/storageclass/manifests/storageclass.yaml
+# Ref: https://kubernetes.io/docs/concepts/storage/storage-classes/#aws-ebs
+# storage/storageclass/storageclass-aws-ebs.yaml
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: prometheus
+  # name: ebs-sc
+  namespace: prometheus
+provisioner: ebs.csi.aws.com
+# volumeBindingMode: WaitForFirstConsumer/Immediate
+parameters:
+  # csi.storage.k8s.io/fstype: xfs/ext4
+  # type: io1
+  type: gp2
+  # iopsPerGB: "50"
+  # encrypted: "true"
+# reclaimPolicy: Delete
+reclaimPolicy: Retain
+allowedTopologies:
+- matchLabelExpressions:
+  - key: topology.kubernetes.io/zone
+    values:
+    #kubectl get nodes -o=jsonpath="{.items[0].metadata.labels['topology\.kubernetes\.io\/zone']}"
+    - ap-south-1a
