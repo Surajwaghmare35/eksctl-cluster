@@ -1,0 +1,35 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: dev
+  name: ingress
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+
+spec:
+  ingressClassName: alb
+  rules:
+  
+    - http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: service-2048
+              port:
+                number: 80
+
+    # - host: "k8s-jobs.letsnhance.com/"
+    - http:
+        paths:
+          - pathType: ImplementationSpecific
+            path: "/nhance"
+            backend:
+              service:
+                name: jobs-nhance-dev
+                port:
+                  number: 80

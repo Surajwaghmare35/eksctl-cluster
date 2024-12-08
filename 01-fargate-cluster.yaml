@@ -1,0 +1,161 @@
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: nhance-dev
+  region: ap-south-1
+  version: "1.31"
+  tags:
+    environment: development
+availabilityZones:
+- ap-south-1a
+- ap-south-1b
+- ap-south-1c
+
+# 1) eksctl utils update-authentication-mode -f config.yaml 2> /dev/null 
+accessConfig:
+  authenticationMode: API_AND_CONFIG_MAP
+  
+  # 2) eksctl create accessentry -f config.yaml 
+  # eksctl get accessentry -f config.yaml 
+  # accessEntries:
+  # - principalARN: arn:aws:iam::046874047165:user/interactionone
+  #   accessPolicies: # optional access polices
+  #     - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+  #       accessScope:
+  #         type: cluster
+
+# 3) eksctl utils update-cluster-logging --config-file config.yaml --approve           
+cloudWatch:
+  clusterLogging: {}
+    # enableTypes: ["*"]
+    # ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+    # logRetentionInDays: 7
+
+privateCluster:
+  enabled: false
+  skipEndpointCreation: false
+
+iam:
+  vpcResourceControllerPolicy: true
+  # 4) eksctl utils associate-iam-oidc-provider -f config.yaml --approve
+  withOIDC: true
+  # https://docs.aws.amazon.com/eks/latest/userguide/cni-iam-role.html
+  # withAddonPolicies:
+  #   albIngress: false
+  #   imageBuilder: true
+  #   autoScaler: true
+  #   externalDNS: true
+  #   certManager: true
+  #   appMesh: true
+  #   appMeshPreview: true
+  #   ebs: true
+  #   fsx: true
+  #   efs: true
+  #   awsLoadBalancerController: true
+  #   xRay: true
+  #   cloudWatch: true
+
+# 5) eksctl create addon -f config.yaml
+# eksctl update addon -f config.yaml
+addonsConfig:
+  disableDefaultAddons: false
+  autoApplyPodIdentityAssociations: true
+
+# bear in mind that if either pod identity or IRSA configuration is explicitly set in the config file,
+# or if the addon does not support pod identities,
+# addonsConfig.autoApplyPodIdentityAssociations won't have any effect.
+
+addons:
+- name: coredns
+  version: latest
+- name: kube-proxy
+  version: latest
+- name: eks-pod-identity-agent
+  version: latest
+
+# - name: vpc-cni
+#   version: latest
+#   # useDefaultPodIdentityAssociations: true
+#   tags:
+#     team: eks
+#   podIdentityAssociations:
+#   - serviceAccountName: aws-node
+#     namespace : kube-system
+#     permissionPolicyARNs: ["arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"]
+
+- name: vpc-cni
+  # all below properties are optional
+  version: latest
+  tags:
+    team: eks
+  # you can specify at most one of:
+  attachPolicyARNs:
+  # - arn:aws:iam::account:policy/AmazonEKS_CNI_Policy
+  - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+  # or
+  # serviceAccountRoleARN: arn:aws:iam::account:role/AmazonEKSCNIAccess
+  resolveConflicts: overwrite
+  
+  # or
+  # attachPolicy:
+  #   Statement:
+  #   - Effect: Allow
+  #     Action:
+  #     - ec2:AssignPrivateIpAddresses
+  #     - ec2:AttachNetworkInterface
+  #     - ec2:CreateNetworkInterface
+  #     - ec2:DeleteNetworkInterface
+  #     - ec2:DescribeInstances
+  #     - ec2:DescribeTags
+  #     - ec2:DescribeNetworkInterfaces
+  #     - ec2:DescribeInstanceTypes
+  #     - ec2:DetachNetworkInterface
+  #     - ec2:ModifyNetworkInterfaceAttribute
+  #     - ec2:UnassignPrivateIpAddresses
+  #     Resource: '*'
+
+# eksctl create fargateprofile -f config.yaml        
+fargateProfiles:
+  - name: fp-default
+    selectors:
+      # All workloads in the "default" Kubernetes namespace will be
+      # scheduled onto Fargate:
+      - namespace: default
+      # All workloads in the "kube-system" Kubernetes namespace will be
+      # scheduled onto Fargate:
+      - namespace: kube-system
+    status: ""
+  - name: fp-dev
+    selectors:
+      # All workloads in the "dev" Kubernetes namespace matching the following
+      # label selectors will be scheduled onto Fargate:
+      - namespace: dev
+        # labels:
+        #   env: dev
+        #   checks: passed
+  - name: fp-prod
+    selectors:
+      # All workloads in the "prod" Kubernetes namespace will be
+      # scheduled onto Fargate:
+      - namespace: prod
+
+# highly-available-cluster
+zonalShiftConfig:
+  enabled: false
+
+kubernetesNetworkConfig:
+  ipFamily: IPv4
+vpc:
+  autoAllocateIPv6: false
+  cidr: 192.168.0.0/16
+  # eksctl utils update-cluster-vpc-config -f config.yaml --approve
+  clusterEndpoints:
+    privateAccess: false
+    publicAccess: true
+  # publicAccessCIDRs: ["1.1.1.1/32"]
+  manageSharedNodeSecurityGroupRules: true
+  nat:
+    gateway: Single # other options: HighlyAvailable, Disable, Single (default)
+
+# eksctl delete cluster -f config.yaml --wait
